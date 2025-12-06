@@ -58,6 +58,188 @@ CREATE TABLE Silver.crm_campaign (
     new_customers_acquired INT NULL
 );
 GO
+
+/*
+===============================================================================
+Silver Layer Load + Standardization (Bronze → Silver)
+===============================================================================
+Purpose:
+    Clean, standardize and transform raw Bronze data into analytics-ready Silver
+    tables. The Silver layer removes duplicates, enforces business rules, and
+    applies semantic normalization required for reporting and modeling.
+
+Core Transformations Performed:
+    • Remove leading/trailing spaces
+    • Standardize acquisition channel values
+    • Normalize activity channel categories
+    • Remove duplicate customer records using ROW_NUMBER()
+    • Clean channel codes across Customer, Activities & Campaign datasets
+    • Ensure Silver conforms to business naming conventions
+
+Business Rules Applied:
+    - 'EVT' → 'Event'
+    - 'AFF' → 'Affiliate'
+    - 'REF' → 'Referral'
+    - Multiple organic/social spellings → 'Organic Social'
+    - Multiple paid social spellings → 'Paid Social'
+
+Why this is necessary:
+    Marketing data typically contains inconsistent codes across CRM,
+    campaigns and activities. Consolidating channel naming makes
+    acquisition efficiency, attribution, and ROI calculations possible
+    during EDA and BI analytics.
+
+Load Pattern:
+    TRUNCATE + INSERT into Silver tables.
+    Silver is always rebuilt from cleansed Bronze data.
+
+Notes:
+    - Silver tables contain no duplicates
+    - Silver is the primary layer used for EDA and analytics
+    - Business metrics such as CAC, CLV, ROI rely on these transformations
+===============================================================================
+*/
+
+TRUNCATE TABLE Silver.crm_customer;
+INSERT INTO Silver.crm_customer(
+	  [customer_id]
+      ,[signup_date]
+      ,[customer_segment]
+      ,[region]
+      ,[status]
+      ,[lifetime_months_expected]
+      ,[acquisition_channel]
+      ,[acquisition_campaign]
+      ,[acquisition_cost_ngn])
+SELECT
+	   [customer_id]
+      ,[signup_date]
+      ,[customer_segment]
+      ,[region]
+      ,[status]
+      ,[lifetime_months_expected]
+      ,[acq_std] AS [acquisition_channel]           ----Remove Unwanted Spaces
+      ,[acquisition_campaign]
+      ,[acquisition_cost_ngn]
+FROM(
+		SELECT [customer_id]
+			  ,[signup_date]
+			  ,[customer_segment]
+			  ,[region]
+			  ,[status]
+			  ,[lifetime_months_expected]
+			  ,[acquisition_campaign]
+			  ,[acquisition_cost_ngn]
+	  ,CASE
+            WHEN LTRIM(RTRIM(acquisition_channel)) = 'EVT' THEN 'Event'
+            WHEN LTRIM(RTRIM(acquisition_channel)) = 'AFF' THEN 'Affiliate'
+            WHEN LTRIM(RTRIM(acquisition_channel)) = 'REF' THEN 'Referral'
+			WHEN UPPER(TRIM(acquisition_channel)) IN ('Organic_Social','Social','Organic Socia','ORG','SOC') THEN 'Organic Social'
+			WHEN UPPER(TRIM(acquisition_channel)) IN ('Paid_Social','PS') THEN 'Paid Social'
+            ELSE LTRIM(RTRIM(acquisition_channel))                                    -----Standardization of acquisition channel
+			END AS acq_std	
+				,ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY customer_id ) AS flag
+		FROM Bronze.crm_customer
+) T
+WHERE flag=1                                                             -------Remove Duplicate
+GO
+
+---Activity Table
+TRUNCATE TABLE Silver.crm_activities;
+INSERT INTO Silver.crm_activities(
+	   [activity_id]
+      ,[customer_id]
+      ,[activity_date]
+      ,[activity_type]
+      ,[activity_value]
+      ,[channel]
+)
+SELECT [activity_id]
+      ,[customer_id]
+      ,[activity_date]
+      ,[activity_type]
+      ,[activity_value]
+      ,[channel]
+FROM (
+SELECT [activity_id]
+      ,[customer_id]
+      ,[activity_date]
+      ,[activity_type]
+      ,[activity_value]
+		,CASE
+			WHEN UPPER(TRIM(channel))='EVT' THEN 'Event'
+			WHEN UPPER(TRIM(channel))='AFF' THEN 'Affiliate'
+			WHEN UPPER(TRIM(channel))='REF' THEN 'Referral'
+			WHEN UPPER(TRIM(channel)) IN ('Organic_Social','Social','Organic Socia','ORG','SOC')
+			THEN 'Organic Social'
+			WHEN UPPER(TRIM(channel)) IN ('Paid_Social','PS') THEN 'Paid Social'
+			END AS Channel
+FROM[Datawarehouse].[Bronze].[crm_activities]
+) T
+GO
+
+----Transactions Table
+INSERT INTO Silver.crm_transaction(
+       [transaction_id]
+      ,[customer_id]
+      ,[transaction_date]
+      ,[transaction_amount_ngn]
+      ,[product_category]
+      ,[payment_method]
+      ,[is_first_month_purchase]
+      ,[cost_to_serve_ngn]
+)
+SELECT [transaction_id]
+      ,[customer_id]
+      ,[transaction_date]
+      ,[transaction_amount_ngn]
+      ,[product_category]
+      ,[payment_method]
+      ,[is_first_month_purchase]
+      ,[cost_to_serve_ngn]
+FROM Bronze.crm_transaction;
+GO
+
+---Campaign Table
+TRUNCATE TABLE Silver.crm_campaign;
+INSERT INTO Silver.crm_campaign(
+	   [campaign_id]
+      ,[campaign_name]
+      ,[channel]
+      ,[campaign_start_date]
+      ,[campaign_end_date]
+      ,[budget_ngn]
+      ,[leads_generated]
+      ,[new_customers_acquired]
+)
+SELECT [campaign_id]
+      ,[campaign_name]
+	  ,[Channel]
+      ,[campaign_start_date]
+      ,[campaign_end_date]
+      ,[budget_ngn]
+      ,[leads_generated]
+      ,[new_customers_acquired]
+FROM(
+SELECT [campaign_id]
+      ,[campaign_name]
+      ,[campaign_start_date]
+      ,[campaign_end_date]
+      ,[budget_ngn]
+      ,[leads_generated]
+      ,[new_customers_acquired]
+	  ,CASE
+            WHEN LTRIM(RTRIM(channel)) = 'EVT' THEN 'Event'
+            WHEN LTRIM(RTRIM(channel)) = 'AFF' THEN 'Affiliate'
+            WHEN LTRIM(RTRIM(channel)) = 'REF' THEN 'Referral'
+			WHEN UPPER(TRIM(channel)) IN ('Organic_Social','Social','Organic Socia','ORG','SOC') THEN 'Organic Social'
+			WHEN UPPER(TRIM(channel)) IN ('Paid_Social','PS') THEN 'Paid Social'
+            ELSE LTRIM(RTRIM(channel))  
+		END AS  Channel
+from Bronze.crm_campaign
+) T
+GO
+
 /*
 ===============================================================================
 Indexing (Silver Layer)
