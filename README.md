@@ -1,2 +1,2 @@
 # Customer-Analytics-DataWarehouse-and-Business-Intelligence
-End-to-end Business Intelligence project building a Bronze → Silver Data Warehouse for a SaaS subscription business using SQL. Includes ETL pipeline, data cleaning, standardization, indexing, and exploratory data analysis. The project delivers marketing performance and customer behaviour insights (CLV, CAC, repeat purchase churn, ROI) to data-drive
+End-to-end Business Intelligence project building a Bronze → Silver Data Warehouse for a SaaS subscription business using SQL. Includes ETL pipeline, data cleaning, standardization, indexing, and exploratory data analysis. The project delivers marketing performance and customer behaviour insights (CLV, CAC, repeat purchase churn, ROI) to data-driven Decision Making.
