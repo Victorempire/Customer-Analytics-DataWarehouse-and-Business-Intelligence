@@ -23,4 +23,7 @@ This project demonstrates the design and implementation of a two-layer SQL Data 
   - Customer behavior analytics: repeat purchases, retention, dormancy, and churn
  # 🏗️ Data Architecture
 
+1. **Bronze Layer**: Stores raw data as-is from the source systems. Data is ingested from CSV Files into SQL Server Database.
+2. **Silver Layer**: This layer includes data cleansing, standardization,normalization processes to prepare data for analysis and Exploratory Data Analysis.
+   
 
