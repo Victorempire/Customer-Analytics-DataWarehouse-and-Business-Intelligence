@@ -1,4 +1,4 @@
-# Customer-Analytics-DataWarehouse-and-Business-Intelligence
+# DataWarehouse-and-Customer-Analytics
 # Data Warehouse & Analytics Project 🚀
 
 Welcome to the Data Warehouse and Analytics Project repository!  
