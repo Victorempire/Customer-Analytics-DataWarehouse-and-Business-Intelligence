@@ -10,7 +10,7 @@ Despite growth, there is limited visibility into:
 - Retention patterns and repeat purchase behavior
 - Campaign performance
 The purpose of this project is to quantify, interpret, and visualize key business insights, enabling data-driven marketing and product decisions.
- # 🏗️ Data Architecture
+# 🏗️ Data Architecture
  This project applies Medallion Architecture concepts, with two implemented layers (Bronze and Silver) forming the current data warehouse structure.
 <img width="684" height="526" alt="Untitled Diagram drawio (1)" src="https://github.com/user-attachments/assets/7953f7ab-9d5d-4aed-9e16-6ee1df3d474e" />
 
@@ -31,5 +31,5 @@ The purpose of this project is to quantify, interpret, and visualize key busines
   - Revenue, cost, and profit trends year-over-year
   - Product category performance (revenue & profit margin)
   - Customer Lifetime Value (CLV) vs Customer Acquisition Cost (CAC) across channels and cohorts
-  - Customer behavior analytics: repeat purchases, retention, dormancy, and churn  
-
+  - Customer behavior analytics: repeat purchases, retention, dormancy, and churn
+ 
