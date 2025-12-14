@@ -255,24 +255,25 @@ SELECT [campaign_id]
       ,[leads_generated]
       ,[new_customers_acquired]
 FROM(
-SELECT [campaign_id]
-      ,[campaign_name]
+SELECT[campaign_name]
       ,[campaign_start_date]
       ,[campaign_end_date]
       ,[budget_ngn]
       ,[leads_generated]
       ,[new_customers_acquired]
+	  ,REPLACE([campaign_id],'CAMP','Camp') AS  [campaign_id]
 	  ,CASE
-            WHEN LTRIM(RTRIM(channel)) = 'EVT' THEN 'Event'
-            WHEN LTRIM(RTRIM(channel)) = 'AFF' THEN 'Affiliate'
-            WHEN LTRIM(RTRIM(channel)) = 'REF' THEN 'Referral'
+            WHEN TRIM(channel) = 'EVT' THEN 'Event'
+            WHEN TRIM(channel) = 'AFF' THEN 'Affiliate'
+            WHEN TRIM(channel) = 'REF' THEN 'Referral'
 			WHEN UPPER(TRIM(channel)) IN ('Organic_Social','Social','Organic Socia','ORG','SOC') THEN 'Organic Social'
 			WHEN UPPER(TRIM(channel)) IN ('Paid_Social','PS') THEN 'Paid Social'
-            ELSE LTRIM(RTRIM(channel))  
+            ELSE TRIM(channel) 
 		END AS  Channel
 from Bronze.crm_campaign
 ) T
 GO
+
 
 /*
 ===============================================================================
