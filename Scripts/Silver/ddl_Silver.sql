@@ -118,7 +118,7 @@ SELECT
       ,[region]
       ,[status]
       ,[lifetime_months_expected]
-      ,[acq_std] AS [acquisition_channel]           ----Remove Unwanted Spaces
+      ,[acq_std] AS [acquisition_channel]       
       ,[acquisition_campaign]
       ,[acquisition_cost_ngn]
 FROM(
@@ -128,21 +128,55 @@ FROM(
 			  ,[region]
 			  ,[status]
 			  ,[lifetime_months_expected]
-			  ,[acquisition_campaign]
 			  ,[acquisition_cost_ngn]
+			  ,REPLACE(acquisition_campaign, 'Camp_', 'Camp') AS acquisition_campaign
 	  ,CASE
-            WHEN LTRIM(RTRIM(acquisition_channel)) = 'EVT' THEN 'Event'
-            WHEN LTRIM(RTRIM(acquisition_channel)) = 'AFF' THEN 'Affiliate'
-            WHEN LTRIM(RTRIM(acquisition_channel)) = 'REF' THEN 'Referral'
+            WHEN TRIM(acquisition_channel) = 'EVT' THEN 'Event'
+            WHEN TRIM(acquisition_channel) = 'AFF' THEN 'Affiliate'
+            WHEN TRIM(acquisition_channel) = 'REF' THEN 'Referral'
 			WHEN UPPER(TRIM(acquisition_channel)) IN ('Organic_Social','Social','Organic Socia','ORG','SOC') THEN 'Organic Social'
 			WHEN UPPER(TRIM(acquisition_channel)) IN ('Paid_Social','PS') THEN 'Paid Social'
-            ELSE LTRIM(RTRIM(acquisition_channel))                                    -----Standardization of acquisition channel
+            ELSE TRIM((acquisition_channel))                                   
 			END AS acq_std	
-				,ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY customer_id ) AS flag
+				,ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY signup_date  ) AS flag
 		FROM Bronze.crm_customer
 ) T
-WHERE flag=1                                                             -------Remove Duplicate
+WHERE flag=1                                                            
+
+---Activity Table
+TRUNCATE TABLE Silver.crm_activities;
+INSERT INTO Silver.crm_activities(
+	   [activity_id]
+      ,[customer_id]
+      ,[activity_date]
+      ,[activity_type]
+      ,[activity_value]
+      ,[channel]
+)
+SELECT [activity_id]
+      ,[customer_id]
+      ,[activity_date]
+      ,[activity_type]
+      ,[activity_value]
+      ,[channel]
+FROM (
+SELECT [activity_id]
+      ,[customer_id]
+      ,[activity_date]
+      ,[activity_type]
+      ,[activity_value]
+		,CASE
+			WHEN UPPER(TRIM(channel))='EVT' THEN 'Event'
+			WHEN UPPER(TRIM(channel))='AFF' THEN 'Affiliate'
+			WHEN UPPER(TRIM(channel))='REF' THEN 'Referral'
+			WHEN UPPER(TRIM(channel)) IN ('Organic_Social','Social','Organic Socia','ORG','SOC')
+			THEN 'Organic Social'
+			WHEN UPPER(TRIM(channel)) IN ('Paid_Social','PS') THEN 'Paid Social'
+			END AS Channel
+FROM[Datawarehouse].[Bronze].[crm_activities]
+) T
 GO
+
 
 ---Activity Table
 TRUNCATE TABLE Silver.crm_activities;
